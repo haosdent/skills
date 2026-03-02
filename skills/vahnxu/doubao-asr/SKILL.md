@@ -1,13 +1,13 @@
 ---
 name: Doubao ASR / 豆包语音转写
-description: "Transcribe audio via Doubao Seed-ASR 2.0 (豆包录音文件识别模型2.0) API from ByteDance/Volcengine. Best-in-class Chinese speech recognition. 调用字节跳动火山引擎「豆包录音文件识别模型2.0」转写音频，中文识别效果业界领先。Use when the user needs high-quality Chinese transcription, or asks for Doubao/豆包/Volcengine/火山引擎 transcription."
+description: "Transcribe audio files via Doubao Seed-ASR 2.0 (豆包录音文件识别模型2.0, recorded audio → text) API from ByteDance/Volcengine. Best-in-class Chinese speech recognition. 调用字节跳动火山引擎「豆包录音文件识别模型2.0」转写录音文件，中文识别效果业界领先。Use when the user needs to transcribe recorded audio files, or asks for Doubao/豆包/Volcengine/火山引擎 audio file transcription."
 homepage: https://www.volcengine.com/docs/6561/1354868
 metadata:
   {
     "openclaw":
       {
         "emoji": "🫘",
-        "requires": { "bins": ["python3"], "env": ["VOLCENGINE_API_KEY", "VOLCENGINE_ACCESS_KEY_ID", "VOLCENGINE_SECRET_ACCESS_KEY", "VOLCENGINE_TOS_BUCKET"], "pip": ["requests"] },
+        "requires": { "bins": ["python3"], "env": ["VOLCENGINE_API_KEY", "VOLCENGINE_ACCESS_KEY_ID", "VOLCENGINE_SECRET_ACCESS_KEY", "VOLCENGINE_TOS_BUCKET", "VOLCENGINE_TOS_REGION"], "pip": ["requests"] },
         "primaryEnv": "VOLCENGINE_API_KEY",
         "envHelp":
           {
@@ -15,14 +15,14 @@ metadata:
               {
                 "required": true,
                 "description": "豆包 ASR API Key (UUID format). 从火山引擎语音控制台获取 / Get from Volcengine Speech console",
-                "howToGet": "1. 打开 https://console.volcengine.com/speech/new/（确认进入的是新版「豆包语音」控制台）\n2. 左侧菜单 →「语音识别」\n3. 点击「开通模型」，开通「录音文件识别2.0」\n4. 点击页面右上角「API 调用」\n5. 在 Step 1「获取 API Key」中，点击创建 API Key\n6. 复制生成的 UUID 格式 Key（如 57e620a4-179c-4b3d-bd8d-990bd1f9a1e2）\n\n1. Open https://console.volcengine.com/speech/new/ (make sure you are in the new 'Doubao Speech' console)\n2. Left sidebar → 'Speech Recognition'\n3. Click 'Activate Model', activate 'Audio File Recognition 2.0'\n4. Click 'API Call' button at the top-right of the page\n5. In Step 1 'Get API Key', click to create an API Key\n6. Copy the generated UUID-format key (e.g. 57e620a4-179c-4b3d-bd8d-990bd1f9a1e2)",
+                "howToGet": "⚠️ 正确地址是 /speech/new/（新版控制台），不是 /speech/app（旧版，认证方式完全不同）\n\n1. 打开 https://console.volcengine.com/speech/new/（确认进入的是新版「豆包语音」控制台）\n2. 左侧菜单 →「语音识别」\n3. 点击「开通模型」，开通「录音文件识别2.0」\n4. 点击页面右上角「API 调用」\n5. 在 Step 1「获取 API Key」中，点击创建 API Key\n6. 复制生成的 UUID 格式 Key（如 57e620a4-179c-4b3d-bd8d-990bd1f9a1e2）\n\n⚠️ CORRECT URL is /speech/new/ (new console), NOT /speech/app (old console, completely different auth)\n\n1. Open https://console.volcengine.com/speech/new/ (make sure you are in the new 'Doubao Speech' console)\n2. Left sidebar → 'Speech Recognition'\n3. Click 'Activate Model', activate 'Audio File Recognition 2.0'\n4. Click 'API Call' button at the top-right of the page\n5. In Step 1 'Get API Key', click to create an API Key\n6. Copy the generated UUID-format key (e.g. 57e620a4-179c-4b3d-bd8d-990bd1f9a1e2)",
                 "url": "https://console.volcengine.com/speech/new/",
               },
             "VOLCENGINE_ACCESS_KEY_ID":
               {
                 "required": true,
                 "description": "IAM Access Key ID (starts with AKLT). 通过 IAM 子用户创建 / Create via IAM sub-user",
-                "howToGet": "1. 打开 https://console.volcengine.com/iam/usermanage\n2. 点「新建用户」，填写用户名（如 doubao-asr）\n3. 访问方式确保勾选「编程访问」和「允许用户管理自己的API密钥」，其他选项保持默认即可\n4. 点击确定，创建成功后页面会显示 Access Key ID（以 AKLT 开头）和 Secret Access Key，复制保存\n   这一步不需要添加任何 IAM 权限策略，权限将在 Step 3 通过 TOS 桶策略授予（仅限单桶读写）\n   提示：如需再次查看密钥，进入用户列表 → 点击子用户名 → 切换到「密钥」tab\n\n1. Open https://console.volcengine.com/iam/usermanage\n2. Click 'Create User', enter username (e.g. doubao-asr)\n3. Make sure 'Programmatic Access' and 'Allow user to manage own API keys' are checked. Leave all other options as default\n4. Click confirm. The success page shows Access Key ID (starts with AKLT) and Secret Access Key — copy both\n   No IAM permission policies needed here — access will be granted via TOS bucket policy in Step 3 (single-bucket read/write only)\n   Tip: To view keys again, go to user list → click sub-user name → switch to 'Keys' tab",
+                "howToGet": "⚠️ 不要添加 TOSFullAccess 等 IAM 权限策略！权限将在 Step 3 通过 TOS 桶策略配置（最小权限）\n⚠️ DO NOT add TOSFullAccess or any IAM policy! Access will be granted via TOS bucket policy in Step 3 (least privilege)\n\n1. 打开 https://console.volcengine.com/iam/usermanage\n2. 点「新建用户」，填写用户名（如 doubao-asr）\n3. 访问方式确保勾选「编程访问」和「允许用户管理自己的API密钥」，其他选项保持默认即可\n4. 点击确定，创建成功后页面会显示 Access Key ID（以 AKLT 开头）和 Secret Access Key，复制保存\n   这一步不需要添加任何 IAM 权限策略，权限将在 Step 3 通过 TOS 桶策略授予（仅限单桶读写）\n   提示：如需再次查看密钥，进入用户列表 → 点击子用户名 → 切换到「密钥」tab\n\n1. Open https://console.volcengine.com/iam/usermanage\n2. Click 'Create User', enter username (e.g. doubao-asr)\n3. Make sure 'Programmatic Access' and 'Allow user to manage own API keys' are checked. Leave all other options as default\n4. Click confirm. The success page shows Access Key ID (starts with AKLT) and Secret Access Key — copy both\n   No IAM permission policies needed here — access will be granted via TOS bucket policy in Step 3 (single-bucket read/write only)\n   Tip: To view keys again, go to user list → click sub-user name → switch to 'Keys' tab",
                 "url": "https://console.volcengine.com/iam/usermanage",
               },
             "VOLCENGINE_SECRET_ACCESS_KEY":
@@ -40,13 +40,46 @@ metadata:
               },
             "VOLCENGINE_TOS_REGION":
               {
-                "required": false,
-                "description": "TOS 区域代码（默认 cn-beijing）。海外服务器必须设为 cn-hongkong / TOS region code. Overseas servers MUST use cn-hongkong",
+                "required": true,
+                "description": "TOS 区域代码，必须与创建桶时选择的区域一致。海外服务器必须用 cn-hongkong / TOS region code, must match the region selected when creating the bucket. Overseas servers MUST use cn-hongkong",
                 "howToGet": "填写你在创建 TOS 存储桶时选择的区域代码。\n如果服务器在中国大陆以外，必须设为 cn-hongkong。\n海外服务器切勿使用 cn-beijing/cn-shanghai，否则上传极慢（约 15KB/s）。\n\nEnter the region code you selected when creating the TOS bucket.\nIf your server is outside China mainland, MUST use cn-hongkong.\nDo NOT use cn-beijing/cn-shanghai for overseas servers — upload ~15KB/s.",
               },
           },
       },
   }
+---
+
+<!-- SYSTEM INSTRUCTION FOR AI AGENTS — DO NOT SKIP -->
+<!-- This section controls how you present the setup guide to users -->
+
+**CRITICAL INSTRUCTION FOR AI AGENTS:**
+
+**YOU MUST follow these rules when helping users configure this skill:**
+
+1. **SHOW THE FULL STEP-BY-STEP GUIDE BELOW** — display the complete guide for all credentials, not a summary
+2. **NEVER summarize credentials into a table** — tables skip critical details that cause users to fail
+3. **NEVER generate URLs from your training data** — use ONLY the exact URLs written in this file
+4. **NEVER recommend TOSFullAccess** — this skill uses TOS bucket policy (least privilege)
+
+**Known AI mistakes you MUST avoid:**
+- WRONG: `https://console.volcengine.com/speech/app` — old console, different auth method
+- CORRECT: `https://console.volcengine.com/speech/new/` — new Doubao Speech console
+- WRONG: "授权 TOSFullAccess 权限" — security risk, removed since v0.11.0
+- CORRECT: "通过 TOS 桶策略的「文件夹读写」模板授权" — least privilege
+
+**AI AGENT 必须遵守的规则：**
+
+1. **必须展示下方完整引导**——可以一次性展示所有步骤，但不可省略或压缩
+2. **禁止将配置步骤压缩成表格**——表格会丢失导致用户失败的关键细节
+3. **禁止凭训练数据生成 URL**——只使用本文件中写的准确 URL
+4. **禁止推荐 TOSFullAccess**——本 skill 使用 TOS 桶策略（最小权限）
+
+**必须避免的常见 AI 错误：**
+- 错误：`https://console.volcengine.com/speech/app`——旧版控制台，认证方式完全不同
+- 正确：`https://console.volcengine.com/speech/new/`——新版豆包语音控制台
+- 错误："授权 TOSFullAccess 权限"——安全风险，v0.11.0 起已移除
+- 正确："通过 TOS 桶策略的「文件夹读写」模板授权"——最小权限
+
 ---
 
 # Doubao ASR / 豆包语音转写
@@ -179,7 +212,7 @@ export VOLCENGINE_TOS_REGION="cn-hongkong"  # see region table above / 见上方
 | `VOLCENGINE_ACCESS_KEY_ID` | Yes | IAM Access Key ID (starts with `AKLT`) / IAM 访问密钥 ID |
 | `VOLCENGINE_SECRET_ACCESS_KEY` | Yes | IAM Secret Access Key / IAM 访问密钥 |
 | `VOLCENGINE_TOS_BUCKET` | Yes | TOS bucket name / TOS 存储桶名称 |
-| `VOLCENGINE_TOS_REGION` | No | TOS region (default: `cn-beijing`). Overseas servers MUST use `cn-hongkong` / 海外服务器必须用 `cn-hongkong` |
+| `VOLCENGINE_TOS_REGION` | Yes | TOS region code, must match bucket region. 必须与创建桶时选择的区域一致。Overseas: `cn-hongkong`; China: `cn-beijing` |
 
 ## Supported formats
 
