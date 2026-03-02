@@ -10,9 +10,10 @@ Replace `<...>` placeholders before use. Daily defaults shown; weekly overrides 
 | `<TIME_WINDOW>` | `past 1-2 days` | `past 7 days` |
 | `<FRESHNESS>` | `pd` | `pw` |
 | `<RSS_HOURS>` | `48` | `168` |
-| `<ITEMS_PER_SECTION>` | `3-5` | `5-8` |
-| `<BLOG_PICKS_COUNT>` | `2-3` | `3-5` |
+| `<ITEMS_PER_SECTION>` | `3-5` | `10-15` |
 | `<EXTRA_SECTIONS>` | *(none)* | `📊 Weekly Trend Summary` |
+| `<ENRICH>` | `false` | `true` |
+| `<BLOG_PICKS_COUNT>` | `3` | `3-5` |
 | `<SUBJECT>` | `Daily Tech Digest - YYYY-MM-DD` | `Weekly Tech Digest - YYYY-MM-DD` |
 | `<WORKSPACE>` | Your workspace path | |
 | `<SKILL_DIR>` | Installed skill directory | |
@@ -48,7 +49,8 @@ python3 <SKILL_DIR>/scripts/run-pipeline.py \
   --config <WORKSPACE>/config \
   --hours <RSS_HOURS> --freshness <FRESHNESS> \
   --archive-dir <WORKSPACE>/archive/tech-news-digest/ \
-  --output /tmp/td-merged.json --verbose --force
+  --output /tmp/td-merged.json --verbose --force \
+  $([ "<ENRICH>" = "true" ] && echo "--enrich")
 ```
 
 If it fails, run individual scripts in `<SKILL_DIR>/scripts/` (see each script's `--help`), then merge with `merge-sources.py`.
@@ -62,7 +64,7 @@ python3 <SKILL_DIR>/scripts/summarize-merged.py --input /tmp/td-merged.json --to
 
 Use this output to select articles — **do NOT write ad-hoc Python to parse the JSON**. Apply the template from `<SKILL_DIR>/references/templates/<TEMPLATE>.md`.
 
-Select articles **purely by quality_score regardless of source type**. Articles in merged JSON are already sorted by quality_score descending within each topic — respect this order. For Reddit posts, append `*[Reddit r/xxx, {{score}}↑]*`.
+Select articles **purely by quality_score regardless of source type**. When an article has a `full_text` field, use it to write a richer 2-3 sentence summary instead of relying solely on the title/snippet. Articles in merged JSON are already sorted by quality_score descending within each topic — respect this order. For Reddit posts, append `*[Reddit r/xxx, {{score}}↑]*`.
 
 Each article line must include its quality score using 🔥 prefix. Format: `🔥{score} | {summary with link}`. This makes scoring transparent and helps readers identify the most important news at a glance.
 
@@ -74,6 +76,8 @@ From `topics.json`: `emoji` + `label` headers, `<ITEMS_PER_SECTION>` items each.
 
 **⚠️ CRITICAL: Output articles in EXACTLY the same order as summarize-merged.py output (quality_score descending). Do NOT reorder, group by subtopic, or rearrange. The 🔥 scores must appear in strictly decreasing order within each section.**
 
+**⚠️ Minimum score threshold: Only include articles with quality_score ≥ 5 in topic sections (LLM, AI Agent, Crypto, Frontier Tech). Skip anything below 5.**
+
 ### Fixed Sections (after topics)
 
 **📢 KOL Updates** — Top Twitter KOLs + notable blog authors. Format:
@@ -83,23 +87,28 @@ From `topics.json`: `emoji` + `label` headers, `<ITEMS_PER_SECTION>` items each.
 ```
 Read `display_name` and `metrics` (impression_count→👁, reply_count→💬, retweet_count→🔁, like_count→❤️) from merged JSON. Always show all 4 metrics, use K/M formatting, wrap in backticks. One tweet per bullet.
 
-**🔥 Community Buzz** — Top Reddit + Twitter trending combined. Format:
+**<EXTRA_SECTIONS>**
+
+**📦 GitHub Releases** — Notable new releases from watched repos. Format:
 ```
-• **r/subreddit** — title `{{score}}↑ · {{num_comments}} comments`
-  <{{url}}>
+• **owner/repo** `vX.Y.Z` — release highlights
+  <https://github.com/owner/repo/releases/tag/vX.Y.Z>
 ```
-Sort by engagement across both platforms. Every entry must have a link.
+Filter for `source_type == "github"` from merged JSON. **Show ALL releases — do not filter or reduce.** No 🔥 score prefix for this section. Skip section if no releases in time window.
 
 **🐙 GitHub Trending** — Top trending repos from the past 24-48h. Format:
 ```
 • **repo/name** ⭐ 1,234 (+56/day) | Language — description
   <https://github.com/repo/name>
 ```
-Show total stars, estimated daily star growth (+N/day), primary language, and description. Sort by daily_stars_est descending. Include 5-10 repos max.
+No 🔥 score prefix for this section. Filter for `source_type == "github_trending"` from merged JSON. Show total stars, estimated daily star growth (+N/day), primary language, and description. Sort by daily_stars_est descending. **Show top 5, plus any additional repos with daily_stars_est > 50.**
 
-**📝 Blog Picks** — `<BLOG_PICKS_COUNT>` deep articles from RSS.
-
-**<EXTRA_SECTIONS>**
+**📝 Blog Picks** — <BLOG_PICKS_COUNT> articles from RSS indie blogs(e.g. antirez, Simon Willison, Paul Graham, Overreacted, Eli Bendersky — personal blogs, not news sites）。Prefer articles with `full_text`; fallback to snippet-based picks. **This section is MANDATORY — never omit.** Format:
+```
+• **Article Title** — Author | 2-3 sentence summary of core insights and highlights
+  <https://blog.example.com/post>
+```
+If `full_text` is available, write summary from full text; otherwise use title + snippet. Summary should highlight unique insights or technical depth — do not just translate the title.
 
 ### Rules
 - Only news from `<TIME_WINDOW>`

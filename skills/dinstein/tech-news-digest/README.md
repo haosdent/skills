@@ -1,6 +1,6 @@
 # Tech News Digest
 
-> Automated tech news digest — 138 sources, 5-layer pipeline, one chat message to install.
+> Automated tech news digest — 151 sources, 6-source pipeline, one chat message to install.
 
 **English** | [中文](README_CN.md)
 
@@ -32,7 +32,7 @@ clawhub install tech-news-digest
 
 ## 📊 What You Get
 
-A quality-scored, deduplicated tech digest built from **138 sources**:
+A quality-scored, deduplicated tech digest built from **151 sources**:
 
 | Layer | Sources | What |
 |-------|---------|------|
@@ -47,28 +47,28 @@ A quality-scored, deduplicated tech digest built from **138 sources**:
 ```
        run-pipeline.py (~30s)
               ↓
-  RSS ─┐
-  Twitter ─┤
-  Web ─────┤── parallel fetch ──→ merge-sources.py
-  GitHub ──┤
-  Reddit ──┘
-              ↓
-  Quality Scoring → Deduplication → Topic Grouping
-              ↓
-    Discord / Email / PDF output
+  RSS ────────┐
+  Twitter ────┤
+  Web ────────┤── parallel fetch ──→ merge-sources.py
+  GitHub ─────┤                          ↓
+  GitHub Tr. ─┤              enrich-articles.py (opt-in)
+  Reddit ─────┘                          ↓
+              Quality Scoring → Dedup → Topic Grouping
+                             ↓
+               Discord / Email / PDF output
 ```
 
 **Quality scoring**: priority source (+3), multi-source cross-ref (+5), recency (+2), engagement (+1), Reddit score bonus (+1/+3/+5), already reported (-5).
 
 ## ⚙️ Configuration
 
-- `config/defaults/sources.json` — 138 built-in sources
+- `config/defaults/sources.json` — 151 built-in sources (62 RSS, 48 Twitter, 28 GitHub, 13 Reddit)
 - `config/defaults/topics.json` — 4 topics with search queries & Twitter queries
 - User overrides in `workspace/config/` take priority
 
 ## 🎨 Customize Your Sources
 
-Works out of the box with 138 built-in sources — but fully customizable. Copy the defaults to your workspace config and override:
+Works out of the box with 151 built-in sources (62 RSS, 48 Twitter, 28 GitHub, 13 Reddit) — but fully customizable. Copy the defaults to your workspace config and override:
 
 ```bash
 # Copy and customize
@@ -112,6 +112,10 @@ pip install weasyprint           # Enables PDF report generation
 ## 📂 Repository
 
 **GitHub**: [github.com/draco-agent/tech-news-digest](https://github.com/draco-agent/tech-news-digest)
+
+## 🌟 Featured In
+
+- [Awesome OpenClaw Use Cases](https://github.com/hesamsheikh/awesome-openclaw-usecases) — Community-curated collection of OpenClaw agent use cases
 
 ## 📄 License
 

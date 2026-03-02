@@ -1,6 +1,6 @@
 # Tech News Digest
 
-> 自动化科技资讯汇总 — 138 个数据源，5 层管道，一句话安装。
+> 自动化科技资讯汇总 — 151 个数据源，5 层管道，一句话安装。
 
 [English](README.md) | **中文**
 
@@ -32,7 +32,7 @@ clawhub install tech-news-digest
 
 ## 📊 你会得到什么
 
-基于 **138 个数据源** 的质量评分、去重科技日报：
+基于 **151 个数据源** 的质量评分、去重科技日报：
 
 | 层级 | 数量 | 内容 |
 |------|------|------|
@@ -62,13 +62,13 @@ clawhub install tech-news-digest
 
 ## ⚙️ 配置
 
-- `config/defaults/sources.json` — 138 个内置数据源
+- `config/defaults/sources.json` — 151 个内置数据源
 - `config/defaults/topics.json` — 4 个主题，含搜索查询和 Twitter 查询
 - 用户自定义配置放 `workspace/config/`，优先级更高
 
 ## 🎨 自定义数据源
 
-开箱即用，内置 138 个数据源——但完全可自定义。将默认配置复制到 workspace 并覆盖：
+开箱即用，内置 151 个数据源——但完全可自定义。将默认配置复制到 workspace 并覆盖：
 
 ```bash
 # 复制并自定义
@@ -118,6 +118,10 @@ python -m unittest discover -s tests -v   # 41 个测试，纯标准库
 ## 📂 仓库地址
 
 **GitHub**: [github.com/draco-agent/tech-news-digest](https://github.com/draco-agent/tech-news-digest)
+
+## 🌟 相关引用
+
+- [Awesome OpenClaw Use Cases](https://github.com/hesamsheikh/awesome-openclaw-usecases) — OpenClaw 社区精选用例合集
 
 ## 📄 开源协议
 
