@@ -1,0 +1,13 @@
+name: openclaw-skill-ansible
+version: 0.1.0
+owner: mac-jane
+contact: @jared
+description: Canonical Ansible coordination skill for OpenClaw task/message workflows.
+repository: https://github.com/likesjx/openclaw-skill-ansible
+license: MIT
+runtime: python3
+required_env: []
+permissions:
+  network: conditional
+  billing: false
+risk_level: medium
