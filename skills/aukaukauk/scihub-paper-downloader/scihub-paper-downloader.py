@@ -16,25 +16,16 @@ MIRRORS = [
     "https://sci-hub.ru",
 ]
 
-UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-
-
-def _get(url: str) -> str:
-    req = Request(url, headers={"User-Agent": UA})
-    with urlopen(req, timeout=TIMEOUT) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
 
 def _extract_pdf_url(html: str, mirror: str) -> str:
     for pat in [
         r'<(?:iframe|embed)[^>]+src=["\']([^"\']+)["\']',
-        r'["\']((https?:)?//[^"\']+?\.pdf[^"\']*)["\']',
+        r'["\']((?:https?:)?//[^"\']+?\.pdf[^"\']*)["\']',
     ]:
-        for match in re.findall(pat, html, re.IGNORECASE):
-            url = match if isinstance(match, str) else match[0]
+        for url in re.findall(pat, html, re.IGNORECASE):
             url = url.strip().replace("\\/", "/")
-            if not url:
-                continue
             if url.startswith("//"):
                 url = f"https:{url}"
             elif url.startswith("/"):
@@ -51,15 +42,15 @@ def find_pdf(doi: str) -> dict:
     safe_doi = quote(doi.strip(), safe="/:().-_")
     for mirror in MIRRORS:
         try:
-            html = _get(f"{mirror}/{safe_doi}")
-            if not html:
-                continue
+            req = Request(f"{mirror}/{safe_doi}", headers={"User-Agent": UA})
+            with urlopen(req, timeout=TIMEOUT) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
             pdf = _extract_pdf_url(html, mirror)
             if pdf:
                 return {"doi": doi, "pdf_url": pdf, "mirror": mirror, "status": "found"}
         except Exception:
             continue
-    return {"doi": doi, "pdf_url": "", "status": "not_found"}
+    return {"doi": doi, "pdf_url": "", "mirror": "", "status": "not_found"}
 
 
 if __name__ == "__main__":

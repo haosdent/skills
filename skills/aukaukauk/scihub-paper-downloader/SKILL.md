@@ -1,8 +1,11 @@
 ---
 name: scihub-paper-downloader
 description: "Download academic papers from Sci-Hub. Given a DOI, returns the PDF download URL."
-metadata: { "openclaw": { "emoji": "📚", "requires": { "bins": ["python3"] } } }
-allowed-tools: ["exec"]
+metadata:
+  openclaw:
+    emoji: "📚"
+    requires:
+      bins: [python3]
 ---
 
 # Sci-Hub Paper Downloader
