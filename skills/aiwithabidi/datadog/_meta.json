@@ -1,0 +1,11 @@
+{
+  "owner": "aiwithabidi",
+  "slug": "datadog",
+  "displayName": "Datadog",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772571374810,
+    "commit": null
+  },
+  "history": []
+}
