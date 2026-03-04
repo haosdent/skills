@@ -17,9 +17,17 @@ echo "Sync runtime -> artifact"
 echo "  runtime:  ${RUNTIME_DIR}"
 echo "  artifact: ${ARTIFACT_AGENT_DIR}"
 
+# One-time safety cleanup: ensure runtime-only files never live in artifact
+rm -rf "${ARTIFACT_AGENT_DIR}/memory" >/dev/null 2>&1 || true
+rm -f "${ARTIFACT_AGENT_DIR}/.publish-state.json" >/dev/null 2>&1 || true
+rm -f "${ARTIFACT_AGENT_DIR}/.publish-now" >/dev/null 2>&1 || true
+
 rsync -a --delete \
   --exclude '.openclaw/' \
   --exclude '.git/' \
+  --exclude 'memory/' \
+  --exclude '.publish-state.json' \
+  --exclude '.publish-now' \
   --exclude '**/.venv/' \
   --exclude '**/__pycache__/' \
   --exclude '**/*.pyc' \
@@ -29,5 +37,10 @@ rsync -a --delete \
   --exclude 'tmp/' \
   "${RUNTIME_DIR}/" \
   "${ARTIFACT_AGENT_DIR}/"
+
+# Record which runtime commit this artifact was synced from
+if command -v git >/dev/null 2>&1 && [[ -d "${RUNTIME_DIR}/.git" ]]; then
+  (cd "${RUNTIME_DIR}" && git rev-parse HEAD) > "${ARTIFACT_AGENT_DIR}/.runtime-head" || true
+fi
 
 echo "OK: synced."

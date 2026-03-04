@@ -61,6 +61,21 @@ if [[ -x "${SKILL_DIR}/scripts/sync-runtime-to-artifact.sh" ]]; then
   "${SKILL_DIR}/scripts/sync-runtime-to-artifact.sh" || true
 fi
 
+# Hard gate: artifact must correspond to runtime HEAD (prevents publishing stale/mismatched snapshots)
+ART_HEAD_FILE="${SKILL_DIR}/agent/.runtime-head"
+if [[ -f "${ART_HEAD_FILE}" ]]; then
+  art_head=$(cat "${ART_HEAD_FILE}" | tr -d '[:space:]' || true)
+else
+  art_head=""
+fi
+
+if [[ -z "${art_head}" || "${art_head}" != "${runtime_head}" ]]; then
+  echo "FAIL: artifact not synced to runtime HEAD"
+  echo "  runtime_head=${runtime_head}"
+  echo "  artifact_head=${art_head:-<missing>}"
+  exit 2
+fi
+
 # Create a semver-ish version automatically.
 # Example: 0.2.202603041112 (YYYYMMDDHHMM)
 version="0.2.$(date +%Y%m%d%H%M)"

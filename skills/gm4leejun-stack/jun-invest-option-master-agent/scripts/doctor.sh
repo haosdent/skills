@@ -53,3 +53,9 @@ for r in "${req[@]}"; do
 done
 
 echo "OK: required files present"
+
+# Gate A (best-effort): validate internal team structure consistency
+if [[ -x "${DST_DIR}/scripts/validate-team.sh" ]]; then
+  echo "Running: scripts/validate-team.sh"
+  bash "${DST_DIR}/scripts/validate-team.sh" "${DST_DIR}"
+fi

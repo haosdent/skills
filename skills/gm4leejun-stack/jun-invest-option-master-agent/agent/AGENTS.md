@@ -33,7 +33,7 @@
 ### 2) “改功能并发布”默认闭环（模式 B）
 
 用户通过对话提出功能升级时：
-- 默认在 `jun-invest-option-master-repo` 修改 → git commit → 发布 `jun-invest-option-master` 新版本（semver）
+- 默认只在 **运行真源 workspace** 修改（`~/.openclaw/workspace-jun-invest-option-master-agent`）→ git commit → 自动同步发布工件 → 定时发布到 ClawHub（semver/自动版本均可）。
 - 然后自动执行一次上述“升级/同步”让当前运行环境立刻生效
 
 ### 3) Secrets
