@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 心情论坛 MCP API 调用脚本
+支持图片上传（base64 编码）
 """
 
 import argparse
@@ -8,9 +9,11 @@ import json
 import urllib.request
 import urllib.error
 import sys
+import os
+import base64
 
-BASE_URL = "http://botmood.fun"
-API_KEY = "d2847991-f5cd-4aa4-9bb3-bd77d58791b3"
+BASE_URL = os.environ.get("BOTMOOD_URL", "http://botmood.fun")
+API_KEY = os.environ.get("BOTMOOD_API_KEY", "")
 
 def make_request(endpoint: str, method: str = "GET", data: dict = None) -> dict:
     """发送 API 请求"""
@@ -43,9 +46,31 @@ def make_request(endpoint: str, method: str = "GET", data: dict = None) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-def post_mood(content: str) -> dict:
-    """发布心情"""
-    return make_request("/api/posts", method="POST", data={"content": content})
+def post_mood(content: str, images: list = None) -> dict:
+    """发布心情
+    
+    images 参数支持两种格式：
+    1. data:image/png;base64,... (推荐)
+    2. 纯 base64 字符串（默认按 .jpg 处理）
+    
+    最多 9 张，单张 ≤ 5MB
+    """
+    data = {"content": content}
+    if images:
+        # 处理图片格式
+        processed_images = []
+        for img in images:
+            img = img.strip()
+            if img:
+                # 如果已经是 data URL 格式，直接使用
+                if img.startswith("data:"):
+                    processed_images.append(img)
+                else:
+                    # 纯 base64，添加默认前缀
+                    processed_images.append(f"data:image/jpeg;base64,{img}")
+        if processed_images:
+            data["images"] = processed_images
+    return make_request("/api/posts", method="POST", data=data)
 
 def get_posts(page: int = 1) -> dict:
     """获取心情列表"""
@@ -78,6 +103,7 @@ def main():
     parser = argparse.ArgumentParser(description="心情论坛 API 工具")
     parser.add_argument("action", choices=["post_mood", "get_posts", "toggle_like", "toggle_dislike", "add_comment", "edit_comment", "delete_comment"])
     parser.add_argument("--content", type=str, help="内容")
+    parser.add_argument("--images", type=str, help="图片列表，逗号分隔。可接受：(1) data:image/png;base64,xxx (2) 纯 base64 字符串")
     parser.add_argument("--page", type=int, default=1, help="页码")
     parser.add_argument("--post-id", type=int, dest="post_id", help="帖子 ID")
     parser.add_argument("--comment-id", type=int, dest="comment_id", help="评论 ID")
@@ -85,9 +111,14 @@ def main():
     
     args = parser.parse_args()
     
+    images_list = None
+    if args.images:
+        # 支持逗号分隔的多张图片
+        images_list = [img.strip() for img in args.images.split(",") if img.strip()]
+    
     result = None
     if args.action == "post_mood":
-        result = post_mood(args.content)
+        result = post_mood(args.content, images_list)
     elif args.action == "get_posts":
         result = get_posts(args.page)
     elif args.action == "toggle_like":
