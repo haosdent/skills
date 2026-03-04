@@ -1,0 +1,11 @@
+{
+  "owner": "mailnike",
+  "slug": "healthclaw",
+  "displayName": "HealthClaw - Built on ERPClaw with double-entry GL, FCRA-compliant screening, and state-specific late fees",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772581228320,
+    "commit": null
+  },
+  "history": []
+}
