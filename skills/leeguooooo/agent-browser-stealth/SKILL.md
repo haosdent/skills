@@ -18,12 +18,12 @@ Use this skill when the task needs web automation and anti-bot stability.
 ## Install and baseline
 
 ```bash
-npm install -g agent-browser-stealth
+pnpm add -g agent-browser-stealth
 agent-browser install
 agent-browser --version
 ```
 
-If default CDP mode is used in your environment, ensure a browser is available at `localhost:9333`, or pass `--cdp` / `--auto-connect` explicitly.
+If default CDP mode is used in your environment, the CLI first tries `localhost:9333` and then auto-discovery. You can still pass `--cdp` / `--auto-connect` explicitly when needed.
 
 ## Standard execution workflow
 
