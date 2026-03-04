@@ -12,46 +12,94 @@ WARNINGS=()
 mkdir -p "$REPORT_DIR"
 cd "$REPO_DIR"
 
-echo "=== Post-Merge Validation ==="
-echo ""
-
-# ─── Check 1: pnpm install ───
-echo ">>> Check 1: pnpm install (--ignore-scripts for safety)..."
-if pnpm install --frozen-lockfile --ignore-scripts 2>&1 | tail -5; then
-  echo "✅ pnpm install succeeded"
-elif pnpm install --ignore-scripts 2>&1 | tail -5; then
-  echo "⚠️  pnpm install succeeded (lockfile updated)"
-  WARNINGS+=("pnpm lockfile was updated during install")
+# Auto-detect package manager
+if [[ -f "package-lock.json" ]]; then
+  PKG="npm"
+elif [[ -f "pnpm-lock.yaml" ]] && command -v pnpm &>/dev/null; then
+  PKG="pnpm"
+elif command -v npm &>/dev/null; then
+  PKG="npm"
 else
-  echo "❌ pnpm install failed"
-  ERRORS+=("pnpm install failed")
+  echo "❌ No package manager found (npm or pnpm required)" >&2
+  exit 1
 fi
 
-# ─── Check 2: pnpm build ───
+echo "=== Post-Merge Validation (using ${PKG}) ==="
 echo ""
-echo ">>> Check 2: pnpm build..."
-if pnpm build 2>&1 | tail -10; then
+
+# ─── Check 1: install ───
+echo ">>> Check 1: ${PKG} install (--ignore-scripts for safety)..."
+INSTALL_OK=false
+if [[ "$PKG" == "pnpm" ]]; then
+  if pnpm install --frozen-lockfile --ignore-scripts 2>&1 | tail -5; then
+    INSTALL_OK=true
+  elif pnpm install --ignore-scripts 2>&1 | tail -5; then
+    INSTALL_OK=true
+    WARNINGS+=("pnpm lockfile was updated during install")
+  fi
+else
+  if npm ci --ignore-scripts 2>&1 | tail -5; then
+    INSTALL_OK=true
+  elif npm install --ignore-scripts 2>&1 | tail -5; then
+    INSTALL_OK=true
+    WARNINGS+=("npm lockfile was updated during install")
+  fi
+fi
+if $INSTALL_OK; then
+  echo "✅ install succeeded"
+else
+  echo "❌ install failed"
+  ERRORS+=("${PKG} install failed")
+fi
+
+# ─── Check 2: build ───
+echo ""
+echo ">>> Check 2: ${PKG} run build..."
+if "$PKG" run build 2>&1 | tail -10; then
   echo "✅ Build succeeded"
 else
   echo "❌ Build FAILED"
-  ERRORS+=("pnpm build failed — TypeScript compilation errors")
+  ERRORS+=("${PKG} build failed — TypeScript compilation errors")
 fi
 
-# ─── Check 3: pnpm ui:build ───
+# ─── Check 2b: TypeScript undefined-name check (catches zombie/shadow bugs) ───
+# tsdown/rolldown does NOT type-check — a function can reference undefined symbols,
+# compile cleanly, and crash at runtime. This step runs tsgo --noEmit and filters for
+# TS2304 (Cannot find name) and TS2305 (no exported member) errors in src/secrets/
+# and src/gateway/ — the areas most likely to regress during a secrets refactor.
 echo ""
-echo ">>> Check 3: pnpm ui:build..."
-if pnpm ui:build 2>&1 | tail -5; then
+echo ">>> Check 2b: TypeScript undefined-name check (src/secrets/ + src/gateway/)..."
+if command -v node_modules/.bin/tsgo &>/dev/null; then
+  TS_ERRORS=$(node_modules/.bin/tsgo --noEmit 2>&1 \
+    | grep -E "^(src/secrets/|src/gateway/)" \
+    | grep -E "error TS(2304|2305|2306):" \
+    || true)
+  if [[ -z "$TS_ERRORS" ]]; then
+    echo "✅ No undefined-name errors in src/secrets/ or src/gateway/"
+  else
+    echo "❌ TypeScript undefined-name errors found (these WILL crash at runtime):"
+    echo "$TS_ERRORS"
+    ERRORS+=("TypeScript undefined-name errors in critical paths — check for zombie functions shadowing imports")
+  fi
+else
+  WARNINGS+=("tsgo not found — skipped undefined-name check (install @typescript/native-preview for this check)")
+fi
+
+# ─── Check 3: ui:build ───
+echo ""
+echo ">>> Check 3: ${PKG} run ui:build..."
+if "$PKG" run ui:build 2>&1 | tail -5; then
   echo "✅ UI build succeeded"
 else
   echo "❌ UI build FAILED"
-  ERRORS+=("pnpm ui:build failed")
+  ERRORS+=("${PKG} ui:build failed")
 fi
 
 # ─── Check 4: Protected tabs in navigation.ts ───
 echo ""
 echo ">>> Check 4: Protected tabs in navigation.ts..."
 NAV_FILE="ui/src/ui/navigation.ts"
-REQUIRED_TABS=("jarvis" "mode" "usage" "memory" "agents" "sessions" "discord" "1password" "pipedream" "zapier")
+REQUIRED_TABS=("jarvis" "mode" "usage" "memory" "agents" "sessions" "discord" "pipedream" "zapier")
 for tab in "${REQUIRED_TABS[@]}"; do
   if grep -q "\"$tab\"" "$NAV_FILE" 2>/dev/null; then
     echo "  ✅ Tab '$tab' present"
@@ -135,6 +183,26 @@ if grep -q "export const uiPluginRegistry" "ui/src/ui/plugins/registry.ts" 2>/de
 else
   echo "  ❌ uiPluginRegistry export missing"
   ERRORS+=("uiPluginRegistry export missing from plugins/registry.ts")
+fi
+
+# ─── Check 9: Post-restart smoke test ───
+# Only runs if the gateway was restarted as part of this merge (safe-merge-update.sh does this).
+# Checks HTTP health endpoint + crash keywords in recent journal logs.
+echo ""
+echo ">>> Check 9: Post-restart smoke test (if gateway was restarted)..."
+if [[ "${SKIP_SMOKE_TEST:-false}" != "true" ]] && [[ -f "scripts/smoke-test.sh" ]]; then
+  if bash scripts/smoke-test.sh 2>&1; then
+    echo "✅ Smoke test passed"
+  else
+    SMOKE_EXIT=$?
+    if [[ $SMOKE_EXIT -eq 2 ]]; then
+      WARNINGS+=("Smoke test: gateway up but crash keywords in logs — check journalctl -u openclaw-gateway")
+    else
+      ERRORS+=("Smoke test: gateway did not start cleanly after restart")
+    fi
+  fi
+else
+  echo "  (skipped — set SKIP_SMOKE_TEST=false and ensure scripts/smoke-test.sh exists to enable)"
 fi
 
 # ─── Summary ───

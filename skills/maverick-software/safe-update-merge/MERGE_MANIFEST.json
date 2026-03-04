@@ -1,6 +1,6 @@
 {
   "$schema": "https://openclaw.ai/schemas/merge-manifest.json",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Protected files and patterns for safe upstream merge",
   "model": "anthropic/claude-opus-4-6",
   "upstream": {
@@ -10,7 +10,7 @@
   },
   "fork": {
     "remote": "origin",
-    "branch": "main",
+    "branch": "local-desktop-main",
     "repo": "maverick-software/openclaw-fork"
   },
   "protectedFiles": {
@@ -44,7 +44,10 @@
         "compactionStatus",
         "update-btn",
         "renderSessionsHistoryModal",
-        "loadArchivedSessions"
+        "loadArchivedSessions",
+        "renderBgSessionsPanel",
+        "openBgSessionsPanel",
+        "bgSessionsPanelOpen"
       ]
     },
     "ui/src/ui/app-view-state.ts": {
@@ -58,7 +61,10 @@
         "chatManualRefreshInFlight",
         "SessionLogEntry",
         "SessionsUsageResult",
-        "CostUsageSummary"
+        "CostUsageSummary",
+        "bgSessionsPanelOpen",
+        "bgSessionsList",
+        "bgSessionsSelectedKey"
       ]
     },
     "ui/src/ui/app.ts": {
@@ -68,7 +74,12 @@
         "jarvis",
         "backgroundJobToasts",
         "compactionStatus",
-        "chatStreamStartedAt"
+        "chatStreamStartedAt",
+        "bgSessionsPanelOpen",
+        "bgSessionsList",
+        "bgSessionsSelectedKey",
+        "bgSessionsHistory",
+        "bgSessionsInput"
       ]
     },
     "ui/src/ui/app-settings.ts": {
@@ -170,6 +181,53 @@
         "http://localhost:*",
         "https://api.openai.com"
       ]
+    },
+    "src/gateway/server-methods/bg-sessions.ts": {
+      "intent": "New RPC handlers: bgSessions.list (lists isolated/cron sessions), bgSessions.history (reads .jsonl transcript). Added 2026-03-01.",
+      "strategy": "keep-ours"
+    },
+    "ui/src/ui/controllers/bg-sessions.ts": {
+      "intent": "Controller for background sessions panel \u2014 loadBgSessions, loadBgSessionHistory, sendBgMessage, selectBgSession, open/close panel, 3s polling. Added 2026-03-01.",
+      "strategy": "keep-ours"
+    },
+    "ui/src/ui/views/bg-sessions.ts": {
+      "intent": "Right-side drawer panel: session dropdown, live transcript, send input, auto-refresh. Rendered as overlay in app-render.ts. Added 2026-03-01.",
+      "strategy": "keep-ours"
+    },
+    "src/gateway/server-methods.ts": {
+      "intent": "Registers all gateway RPC handlers. Custom handlers added: pipedreamHandlers, pipedreamAgentHandlers, zapierHandlers, zapierAgentHandlers, hostingerHandlers, bgSessionsHandlers, discordConnectHandlers.",
+      "strategy": "ai-merge",
+      "mustPreserve": [
+        "bgSessionsHandlers",
+        "pipedreamHandlers",
+        "zapierHandlers",
+        "hostingerHandlers",
+        "discordConnectHandlers"
+      ]
+    },
+    "src/gateway/server-methods/hostinger.ts": {
+      "intent": "Hostinger VPS management RPC handlers \u2014 installed from skills/hostinger-vps-deploy reference. Not in upstream.",
+      "strategy": "keep-ours"
+    },
+    "src/gateway/server-methods/plugins-ui.ts": {
+      "intent": "Plugin UI registry with builtin views: jarvis, apikeys (Vault), compaction, discord. getDynamicTabGroups merges static TAB_GROUPS with plugin-registered views.",
+      "strategy": "ai-merge",
+      "mustPreserve": [
+        "apikeys",
+        "discord",
+        "compaction",
+        "BUILTIN_UI_VIEWS",
+        "getDynamicTabGroups"
+      ]
+    },
+    "ui/src/ui/views/memory.ts": {
+      "intent": "Memory tab view with first-load spinner \u2014 shows spinner until health+stats data arrives instead of rendering empty content.",
+      "strategy": "ai-merge",
+      "mustPreserve": [
+        "isFirstLoad",
+        "memSpinner",
+        "Loading memory status"
+      ]
     }
   },
   "newFiles": {
@@ -195,7 +253,8 @@
       "ui/src/ui/controllers/agent-pipedream.ts",
       "ui/src/ui/chat/grouped-render.ts",
       "src/gateway/server-methods/update.ts",
-      "src/gateway/session-archive.ts"
+      "src/gateway/session-archive.ts",
+      "scripts/safe-merge-update.sh"
     ]
   },
   "protectedPatterns": {
@@ -225,6 +284,34 @@
       "src/agents/auth-profiles*",
       "src/acp/**",
       "vitest.*"
+    ]
+  },
+  "refactorChecklist": {
+    "description": "Extra checks required when upstream moves functions out of a file into sub-modules (module-extraction refactors). These are the highest-risk merge patterns.",
+    "triggers": [
+      "File shrinks by >100 lines",
+      "New sub-module files appear (e.g. *-shared.ts, *-collectors.ts, *-helpers.ts)",
+      "New import lines are added to a file that also has local functions with the same names"
+    ],
+    "checks": [
+      {
+        "id": "zombie-functions",
+        "description": "Check for zombie local functions that share a name with newly-imported symbols",
+        "howTo": "After merge: grep for 'function <name>' in the file for every name listed in the new import statements. If a local copy exists AND the import was added, the local copy must be deleted.",
+        "wouldHaveCaught": "2026-03-02 runtime.ts crash — collectConfigAssignments et al. were imported but also still defined locally"
+      },
+      {
+        "id": "import-completeness",
+        "description": "Verify all symbols called within local functions are actually imported",
+        "howTo": "Run: grep -n 'coerceSecretRef\\|isNonEmptyString\\|isRecord\\|SecretDefaults\\|ProviderLike' <file> and confirm each is in an import statement. Any hit in a function body with no matching import = runtime crash.",
+        "wouldHaveCaught": "2026-03-02 runtime.ts crash — coerceSecretRef referenced but never imported"
+      },
+      {
+        "id": "schema-field-types",
+        "description": "When upstream adds SecretInputSchema support to new fields, check our schema for z.string() fields that should accept SecretRef objects",
+        "howTo": "Search for z.string() on apiKey, token, secret fields: grep -n 'apiKey.*z\\.string\\|token.*z\\.string\\|secret.*z\\.string' src/config/",
+        "wouldHaveCaught": "2026-03-02 memorySearch.remote.apiKey, talk.apiKey, tts.elevenlabs.apiKey rejecting vault refs"
+      }
     ]
   }
 }

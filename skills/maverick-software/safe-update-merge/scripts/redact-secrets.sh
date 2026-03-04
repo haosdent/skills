@@ -11,8 +11,12 @@
 #   - The redaction map is ONLY emitted to fd 3 when explicitly opened by the caller.
 #   - If fd 3 is not open, the script aborts with an error rather than falling back to stderr.
 #     This prevents the map from leaking into logs or shell output.
-#   - No map data is written to disk, stdout, or any other stream.
-#   - Caller must open fd 3 before invoking: exec 3>map_holder; ./redact-secrets.sh file
+#   - This script does NOT open any files itself — it writes the map exclusively to fd 3.
+#   - However: the CALLER (safe-merge-update.sh) wires fd 3 to a per-file temp file inside
+#     a mode-700 mktemp directory. So maps DO end up on disk — in a private, process-owned
+#     temp dir — and are deleted immediately after secret restoration. They never appear on
+#     stdout, stderr, or any world-readable path.
+#   - Caller must open fd 3 before invoking: exec 3>"$MAP_FILE"; ./redact-secrets.sh file
 #
 # Patterns detected:
 #   - API keys (sk-, pk-, ghp_, ghs_, xoxb-, xoxp-, AKIA, etc.)

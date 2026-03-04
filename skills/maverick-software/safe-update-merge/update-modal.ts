@@ -21,6 +21,8 @@ export interface UpdateModalProps {
   onCheck: () => void;
   onRunMerge: () => void;
   onClose: () => void;
+  autoRunEnabled: boolean | null;   // null = loading
+  onAutoRunToggle: (enabled: boolean) => void;
 }
 
 const STORAGE_KEY = "openclaw-merge-model";
@@ -57,6 +59,32 @@ function renderModelOptions(models: UpdateModalModel[], selected: string) {
 
 export function renderUpdateModal(props: UpdateModalProps) {
   if (props.state === "closed") return nothing;
+
+  const autoRunToggle = html`
+    <div style="margin-top: 14px; text-align: left;">
+      <label style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+        Hourly Auto-Run
+      </label>
+      <select
+        style="width: 100%; padding: 8px 10px; background: var(--bg-input, #111); color: var(--fg); border: 1px solid var(--border, #333); border-radius: 6px; font-size: 13px;"
+        .value=${props.autoRunEnabled === null ? "" : props.autoRunEnabled ? "enabled" : "disabled"}
+        ?disabled=${props.autoRunEnabled === null}
+        @change=${(e: Event) => {
+          const val = (e.target as HTMLSelectElement).value;
+          props.onAutoRunToggle(val === "enabled");
+        }}
+      >
+        ${props.autoRunEnabled === null
+          ? html`<option value="">Loading…</option>`
+          : nothing}
+        <option value="enabled">✅ Enabled — runs every hour automatically</option>
+        <option value="disabled">⏸ Disabled — manual trigger only</option>
+      </select>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+        Disabling pauses the hourly cron job — use "Run Safe Merge" to trigger manually
+      </div>
+    </div>
+  `;
 
   const modelSelector = html`
     <div style="margin-top: 16px; text-align: left;">
@@ -104,6 +132,7 @@ export function renderUpdateModal(props: UpdateModalProps) {
                 Check the upstream repository for new commits?
               </div>
               ${modelSelector}
+              ${autoRunToggle}
               <button class="btn" style="margin-top: 20px; background: var(--accent); color: var(--bg); font-weight: 600; padding: 10px 28px; font-size: 14px;" @click=${props.onCheck}>
                 Check for Updates
               </button>
@@ -144,6 +173,7 @@ export function renderUpdateModal(props: UpdateModalProps) {
                 </div>
               `}
               ${modelSelector}
+              ${autoRunToggle}
               <div style="display: flex; gap: 10px; justify-content: center; margin-top: 24px;">
                 <button class="btn" style="padding: 10px 20px;" @click=${props.onClose}>Close</button>
                 <button class="btn" style="background: var(--accent); color: var(--bg); font-weight: 600; padding: 10px 20px;" @click=${props.onRunMerge}>
